@@ -1,0 +1,467 @@
+
+    init(form:TInterventionEditForm):void {
+        this._form = form;
+        this._params = location.search.substring(1).split('&');
+        // params[0] : mode affi, modif, suppr, ajout
+        // params[1] : id en mode affi, modif, suppr
+        //this.form.divInterventionPrest.hidden = true;
+        this.initMsgErreur();
+        let titre : string;
+        switch (this.params[0]) {
+            case 'suppr' : titre = "Suppression d'une intervention"; break;
+            case 'ajout' : titre = "Nouvelle intervention"; break;
+            case 'modif' : titre = "Modification d'une intervention"; break;
+            default : titre = "DÃ©tail d'une intervention";
+        } 
+        this.form.divTitre.textContent = titre;
+        const lesInterventions = new LesInterventions;
+        const affi = this.params[0] === 'affi';
+        if (this.params[0] === 'affi'){ // affi ou modif ou suppr
+            const intervention = lesInterventions.byNumInterv(this._params[1]);
+
+            this.form.edt_intervention_num.value = intervention.numInterv;
+            this.form.edt_intervention_motif.value = intervention.objetInterv;
+            this.form.edt_intervention_date.value = this.formatDate(intervention.dateInterv) ;
+            this.form.edt_intervention_observations.value = intervention.obsInterv;
+            this.form.edtNumeroContrat.value = intervention.numCont;
+            this.detailContrat(this.form.edtNumeroContrat.value);
+            this.affiPrestation();
+
+            //Il y a des champs non modifiables en modification par exemple
+            this.form.edt_intervention_num.readOnly = true;
+            this.form.edt_intervention_motif.readOnly = true;
+            this.form.edt_intervention_date.readOnly = true;
+            this.form.edt_intervention_observations.readOnly = true;
+            this.form.edtNumeroContrat.readOnly = true;
+            this.erreur.edt_intervention_num.statut = "correct";     
+        }
+        
+        //modification
+        if (this.params[0] === 'modif'){ 
+            const intervention = lesInterventions.byNumInterv(this._params[1]);
+
+            this.form.edt_intervention_num.value = intervention.numInterv;
+            this.form.edt_intervention_motif.value = intervention.objetInterv;
+            this.form.edt_intervention_date.value = this.formatDate(intervention.dateInterv) ;
+            this.form.edt_intervention_observations.value = intervention.obsInterv;
+            this.form.edtNumeroContrat.value = intervention.numCont;
+            this.detailContrat(this.form.edtNumeroContrat.value);
+            this.affiPrestation();
+
+
+            //pour le changement du numÃ©ro
+            this.form.edtNumeroContrat.addEventListener('change',() => {
+            this.detailContrat(this.form.edtNumeroContrat.value);
+
+            })
+            this.form.divInterventionPrestEdit.hidden = true;
+
+            //Il y a des champs non modifiables en modification par exemple
+            this.form.edt_intervention_num.readOnly = true;
+            this.form.edt_intervention_motif.readOnly = false;
+            this.form.edt_intervention_date.readOnly = true;
+            this.form.edt_intervention_observations.readOnly = false;
+            this.form.edtNumeroContrat.readOnly = false;
+            this.erreur.edt_intervention_num.statut = "correct";
+            
+        }
+
+        if (this.params[0] === 'ajout'){
+            this.verifNumeroContrat(this.form.edtNumeroContrat.value);
+            const lesInterventions = new LesInterventions();
+            const allInterventionsObj = lesInterventions.all();
+            //accÃ©der aux valeurs de allInterventionsObj
+            const allInterventions = Object.values(allInterventionsObj);
+            let latestDate = new Date(0);
+
+            let maxNum = 0;
+            for (const intervention of allInterventions){
+                const numInterv = parseInt(intervention.numInterv);
+                const dateInterv = new Date(intervention.dateInterv);
+                if (numInterv > maxNum){
+                    maxNum = numInterv;
+                    latestDate = dateInterv;
+                }
+
+                this.form.edt_intervention_num.value = (maxNum + 1).toString();
+                latestDate.setDate(latestDate.getDate() + 1);
+                let conversionDate = this.formatDate(latestDate.toISOString().split('T')[0]) ;
+                this.form.edt_intervention_date.value = conversionDate;
+
+            }
+            this.form.edt_intervention_num.readOnly = true;
+            this.form.btnRetour.hidden = affi;
+            
+        }
+        this.affiPrestation();
+
+        if (this.params[0] === 'suppr') { 
+            // temporisation 1 seconde pour afficher les donnÃ©es de l'intervention avant demande de confirmation de la supression
+            //setTimeout(() => {this.supprimerIntervention(this.params[1])}, 1000);
+            this.supprimerIntervention(this.params[1]);
+        }
+        this.form.btnRetour.hidden = !affi;
+        this.form.btnValider.hidden = affi;
+        this.form.btnAnnuler.hidden = affi;
+        this.form.btnAjouterPrestation.hidden = affi;
+
+        // dÃ©finition des Ã©vÃ©nements 
+        this.form.edtNumeroContrat.onchange = function():void {
+        vueInterventionEdit.detailContrat(vueInterventionEdit.form.edtNumeroContrat.value); }
+
+        //dÃ©finition des Ã©vÃ¨nements si le contrat change
+        this.form.edtNumeroContrat.addEventListener('change',() => {
+            this.detailContrat(this.form.edtNumeroContrat.value);
+        })
+
+        this.form.btnRetour.addEventListener('click',  function () {vueInterventionEdit.retourClick();});
+        this.form.btnAnnuler.addEventListener('click', function () {vueInterventionEdit.retourClick()});
+        this.form.btnValider.addEventListener('click', function () {vueInterventionEdit.validerClick()});
+        this.form.btnValiderPrestation.addEventListener('click',  function () {vueInterventionEdit.validerPrestationClick()});
+        this.form.btnAjouterPrestation.addEventListener('click',  function () {vueInterventionEdit.ajouterPrestationClick()});
+        this.form.btnAnnulerPrestation.addEventListener('click', function () {vueInterventionEdit.annulerPrestationClick()});
+
+    }
+    affiEquipement(): void {
+        const lesTypEquiptsBySalle = new LesTypEquiptsBySalle();
+        this._grille = lesTypEquiptsBySalle.byNumSalle(this.params[1]);
+        this.affiGrilleEquipement();
+    }
+    //affichage du dÃ©tail d'un contrat Ã  partir du numÃ©ro entrÃ©
+    detailContrat(valeur : string):void {
+        const err = this.erreur.edtNumeroContrat;
+        const lesContrats = new LesContrats;
+        const lesClients = new LesClients;
+        const detail = this.form.lblDetailContrat;
+        const detailClient = this.form.lblDetailClient;
+        detail.textContent = "";
+        detailClient.textContent="";
+        //err.statut = "correct";
+        const chaine : string = valeur.trim();
+        if (chaine.length > 0) {
+            const contrat : UnContrat = lesContrats.byNumCont(chaine);
+            const client : UnClient = lesClients.byNumCli(contrat.numCli);         
+            if (contrat && contrat.numCont !== "") { // contrat trouvÃ©    
+                //dÃ©finition de la couleur pour l'affichage
+                detail.style.color = "black";
+                detailClient.style.color = "black";
+                //utilisation de innerHTML pour l'afficher comme du html
+                detail.innerHTML = "Site protÃ©gÃ©"+" <br>" +"contrat crÃ©Ã© le "+this.formatDate(contrat.dateCont)  +"<br>"+contrat.adrSite+"<br>"+contrat.cpSite+" "+contrat.villeSite; 
+                detailClient.innerHTML = "Client"+" <br>" +client.civCli +" "+client.nomCli+" "+client.prenomCli+"<br>"+client.melCli+"<br>"+client.telCli; 
+            }
+            else {
+                //affiche un message d'ereur et vide le dÃ©tail client
+                err.statut = 'inconnu';
+                detail.textContent = err.msg.inconnu;
+                detailClient.textContent = ""; 
+            }
+        }
+        else err.statut = 'vide';
+    }
+
+    affiPrestation():void {
+        const lesPrestationsByIntervention = new LesPrestationsByIntervention(); 
+        this._grille = lesPrestationsByIntervention.byNumInterv(this.params[1]);
+        this.affiGrillePrestation();
+    }
+
+    //affichage de la table des prestations    
+    affiGrillePrestation():void {
+        //vider d'abord les Ã©lÃ©ments de la table avant insertion
+        while (this.form.tablePrestations.rows.length > 1) { 
+            this.form.tablePrestations.rows[1].remove(); 
+        }
+        let total = 0;
+        let totalHT : number = 0;
+
+        //vÃ©rifier si la grille contient des prestations
+        /*if (Object.keys(this._grille).length === 0){
+            this.form.lblTotalPrestation.textContent = "Aucune prestation enregistrÃ©e pour le moment";   
+        }*/
+        
+        for (let id in this._grille) {
+            const unPrestationByIntervention : UnPrestationByIntervention = this.grille[id];
+            const quantitÃ© = parseInt(unPrestationByIntervention.qtePrest);
+            const tar = parseFloat(unPrestationByIntervention.tarifHt);
+            let montnt = quantitÃ© * tar;
+            totalHT += montnt;
+            const tr = this.form.tablePrestations.insertRow();
+            tr.insertCell().textContent = unPrestationByIntervention.codePrest;
+            tr.insertCell().textContent = unPrestationByIntervention.libPrest;
+            tr.insertCell().textContent = unPrestationByIntervention.tarifHt;
+            tr.insertCell().textContent = unPrestationByIntervention.qtePrest.toString();
+            tr.insertCell().textContent = montnt.toFixed(2); 
+            //this.form.edtQte.value="";
+            const affi = this.params[0] === 'affi';
+            
+
+            if (!affi) {
+                let balisea : HTMLAnchorElement; // dÃ©claration balise <a>
+                // crÃ©ation balise <a> pour appel modification Ã©quipement dans salle
+                balisea = document.createElement("a")
+                balisea.classList.add('img_modification')
+                balisea.onclick = function():void { vueInterventionEdit.modifierPrestationClick(id); }
+                tr.insertCell().appendChild(balisea)
+                // crÃ©ation balise <a> pour appel de la suppression d'une prestation d'une salle
+                balisea = document.createElement("a")
+                balisea.classList.add('img_corbeille')
+                balisea.onclick = function():void { vueInterventionEdit.supprimerPrestationClick(id); }
+                tr.insertCell().appendChild(balisea)
+            }
+            total += Number(unPrestationByIntervention.qtePrest);
+                
+        }
+        const tauxTVA = 0.10;
+        let totalTVA = totalHT * tauxTVA;
+        let totalTTC = totalHT + totalTVA;
+        this.form.lblTotalPrestation.textContent = "Totaux                    HT: "+totalHT.toFixed(2)+"                  TVA: "+totalTVA.toFixed(2)+"       TTC: "+totalTTC.toFixed(2);
+        //this.form.btnAjouterPrestation.hidden = false;
+        this.form.edtQte.value = "";
+        //this.form.btnAjouterPrestation.addEventListener('click',  function () {vueInterventionEdit.ajouterPrestationClick()});
+
+        
+                
+    }
+    //formatage de la date en dd/mm/yyyy
+    formatDate (dateStr: string){
+        const [yyyy, mm, dd] = dateStr.split('-');
+        return `${dd}/${mm}/${yyyy}`;
+    }
+
+    //formatage de la date en yyyy/mm/dd pour reformater la date au moment de vÃ©rifier l'existence d'une intervention
+    formatDateRetour (dateStr: string){
+        const [dd, mm, yyyy] = dateStr.split('/');
+        return `${yyyy}-${mm}-${dd}`;
+    }
+                
+    supprimerIntervention(numIntervention : string):void {
+        if (confirm("Confirmez-vous la suppression de l'intervention "+numIntervention+"?")) {
+            let lesPrestationsByIntervention : LesPrestationsByIntervention = new LesPrestationsByIntervention(); 
+            lesPrestationsByIntervention.delete(numIntervention); // suppression dans la base des equipements de la salle
+            const lesInterventions = new LesInterventions;
+            lesInterventions.delete(numIntervention); // suppression dans la base de la salle
+        }
+        this.retourClick(); 
+        
+    }
+
+    //vÃ©rification du numÃ©ro d'intervention
+    verifNum(valeur : string):void {
+        const lesInterventions = new LesInterventions;
+        const err = this.erreur.edt_intervention_num;
+        err.statut = "correct";
+        const chaine : string = valeur.trim();
+        if (chaine.length > 0) {
+            if (! chaine.match(/^([a-zA-Z0-9]+)$/)) {
+                // expression rÃ©guliÃ¨re qui teste si la chaÃ®ne ne contient rien d'autre 
+                // que des caractÃ¨res alphabÃ©tiques minuscules ou majuscules et des chiffres 
+                this.erreur.edt_intervention_num.statut = 'inconnu';
+            }
+            else if ( (this.params[0] === 'ajout') && (lesInterventions.idExiste(chaine)) ) { 
+                this.erreur.edt_intervention_num.statut = 'doublon';
+            }
+        }
+        else err.statut = 'vide';
+    } 
+    verifDate(valeur : string):void {
+        const err = this.erreur.edt_intervention_date;
+        err.statut = "correct";
+        const chaine : string = valeur.trim();
+        if (chaine.length === 0) {
+            err.statut = 'vide';
+        }
+    }
+    //vÃ©rification du numÃ©ro de contrat
+    verifNumeroContrat(valeur: string):void{
+        const lesContrats = new LesContrats;
+        const err = this.erreur.edtNumeroContrat;
+        err.statut = "correct";
+
+        const chaine : string = valeur.trim();
+        if (chaine.length > 0) {
+            if (! chaine.match(/^([a-zA-Z0-9]+)$/)) {
+                // expression rÃ©guliÃ¨re qui teste si la chaÃ®ne ne contient rien d'autre 
+                // que des caractÃ¨res alphabÃ©tiques minuscules ou majuscules et des chiffres 
+                this.erreur.edtNumeroContrat.statut = 'inconnu';
+            }
+            else if ( (this.params[0] === 'ajout') && (lesContrats.idExiste(chaine)) ) { 
+                this.erreur.edtNumeroContrat.statut = 'doublon';
+            }
+        }
+        else err.statut = 'vide';
+    }
+
+    traiteErreur(uneErreur:TErreur, zone : HTMLElement):boolean {
+        let correct = true;
+        zone.textContent ="";
+        if (uneErreur.statut !== "correct") { // non correct ==> erreur 
+            if (uneErreur.msg[uneErreur.statut] !== '') { // erreur 
+                zone.textContent = uneErreur.msg[uneErreur.statut];
+                correct = false;
+            }
+        }
+        return correct;
+    }
+
+    validerClick():void {
+        let correct = true;
+        this.verifNum(this.form.edt_intervention_num.value);
+        this.verifNumeroContrat(this.form.edtNumeroContrat.value);
+        this.verifDate(this.form.edt_intervention_date.value);
+        //si la grille est vide, l'erreur de la prestation est indiquÃ©e Ã  vide
+        if (JSON.stringify(this.grille) === '{}' ) { this._erreur.prestation.statut = 'vide';}
+        //else if (JSON.stringify(this.grille) !== '{}' ) { this._erreur.prestation.statut = 'correct';}
+        else this._erreur.prestation.statut = "correct";
+        correct = this.traiteErreur(this._erreur.edt_intervention_num, this.form.lbl_erreur_num_interv) && correct;
+        correct = this.traiteErreur(this._erreur.edt_intervention_date, this.form.lblIntervDateErreur) && correct;
+        correct = this.traiteErreur(this._erreur.edtNumeroContrat, this.form.lblContratErreur) && correct;
+        correct = this.traiteErreur(this._erreur.prestation, this.form.lblPrestationErreur) && correct;
+        
+        const lesInterventions = new LesInterventions;
+        const intervention = new UnIntervention;
+        const intervExiste = lesInterventions.byContratDate(this.form.edtNumeroContrat.value, this.formatDateRetour(this.form.edt_intervention_date.value));
+        if (intervExiste !== ""){
+            alert("Une intervention existe dÃ©jÃ  pour ce contrat Ã  la mÃªme date.");
+            correct=false;
+            this.retourClick();
+            return;
+        }
+        if (correct) {  
+            intervention.numInterv = this.form.edt_intervention_num.value; 
+            intervention.numCont = this.form.edtNumeroContrat.value;
+            intervention.dateInterv = this.formatDateRetour(this.form.edt_intervention_date.value); 
+            intervention.objetInterv = this.form.edt_intervention_motif.value; 
+            intervention.obsInterv = this.form.edt_intervention_observations.value;        
+            if (this._params[0] === 'ajout') {
+                lesInterventions.insert(intervention);    
+            }
+            else {
+                lesInterventions.update(intervention);
+                
+            }
+            const lesPrestationsByIntervention : LesPrestationsByIntervention = new LesPrestationsByIntervention;
+            lesPrestationsByIntervention.delete(intervention.numInterv);
+            lesPrestationsByIntervention.insert(intervention.numInterv, this.grille);
+
+            this.retourClick();
+        }
+    }
+
+    retourClick():void {
+        location.href = "../vue/liste_intervention.html";
+    } 
+
+    //modification d'une prestation dans la table des prestations
+    modifierPrestationClick(id : string):void {
+        //rÃ©activation de prestation edit avant le traitement
+        this.form.divInterventionPrestEdit.hidden = false;
+        this.afficherPrestationEdit();
+        const lesPrestations = new LesPrestations();
+        const unPrestation : UnPrestation = lesPrestations.byCodePrest(id) ;
+        this.form.listePrest.length = 0;
+        this.form.listePrest.options.add(new Option(unPrestation.libPrest, id)); // text, value = 0;
+        this.form.listePrest.selectedIndex = 0;
+        this.form.edtQte.value = this._grille[id].qtePrest; 
+    }
+
+
+    //affichage du select pour choisir une prestation Ã  ajouter
+    ajouterPrestationClick():void {
+        if (this._params[0] === 'modif') {
+            this.form.divInterventionPrestEdit.hidden = false;
+        }
+        
+        this.afficherPrestationEdit();
+
+        // rÃ©initialiser la liste des prestation Ã  choisir
+        this.form.listePrest.length = 0;
+        const lesPrestations = new LesPrestations;
+        const data = lesPrestations.all();
+        const idPrestations = [];
+        for (let i in this._grille) {
+            idPrestations.push(this._grille[i].codePrest); 
+        }
+
+        for (let i in data) {
+            const id = data[i].codePrest;
+            if (idPrestations.indexOf(id) === -1) { // pas dans la liste des Ã©quipements dÃ©jÃ  dans la salle
+                this._form.listePrest.options.add(new Option(data[i].libPrest, id)); // text, value
+            }
+        }
+       
+    }
+
+
+
+    supprimerPrestationClick(id : string):void {
+        if (confirm("Confirmez-vous le retrait de la prestation de l'intervention' ")) {
+            delete(this._grille[id]);
+            this.affiGrillePrestation();
+        }
+    }
+
+
+    afficherPrestationEdit():void {
+        this.form.btnAjouterPrestation.hidden = false;
+        this.form.btnAnnuler.hidden = true;
+        this.form.btnValider.hidden = false;
+    } 
+
+    cacherPrestationEdit():void {
+        this.form.divInterventionPrest.hidden=false;
+        this.form.edtQte.value="";
+        this.form.listePrest.hidden=true;
+        this.form.btnAjouterPrestation.hidden = false;
+        this.form.btnAnnuler.hidden = false;
+        this.form.btnValider.hidden = false;
+       
+    } 
+
+    verifListePrestation():void {
+        const err = this._erreur.listePrest;
+        err.statut = "correct";
+        const cible = this._form.listePrest;
+        if (cible.value === "") {
+            err.statut = 'vide';
+        }
+    }
+
+    verifQte():void {
+        const err = this._erreur.edtQte
+        err.statut = "correct";
+        const valeur : string = this._form.edtQte.value;
+        if ( ! ( (Number.isInteger(Number(valeur))) && (Number(valeur)>0) ) ) {
+            err.statut = 'vide';
+        }
+    }
+                    
+    //bouton d'ajout d'une prestation
+    validerPrestationClick():void {
+        let correct = true;
+        this.verifListePrestation();
+        this.verifQte();
+        //disparition de la liste des prestations aprÃ¨s la validation
+        correct = this.traiteErreur(this._erreur.listePrest, this.form.lblPrestationSelectErreur) && correct;
+        correct = this.traiteErreur(this._erreur.edtQte, this.form.lblQteErreur) && correct;  
+        if (correct) {      
+            const lesPrestations = new LesPrestations;
+            // ajout visuel de la ligne dans la grille tabulaire de la liste des prestations d'une intervention
+            const unPrestation : UnPrestation = lesPrestations.byCodePrest(this._form.listePrest.value); 
+            const unPrestationByIntervention: UnPrestationByIntervention = new UnPrestationByIntervention(unPrestation.codePrest,unPrestation.libPrest,unPrestation.tarifHt, (this._form.edtQte.value));
+            this._grille[unPrestation.codePrest] = unPrestationByIntervention;
+            this.form.listePrest.length = 0;
+            const idPrestations = [];
+            for (let i in this._grille) {
+                idPrestations.push(this._grille[i].codePrest); 
+            }
+            this.affiGrillePrestation(); 
+        }
+    }
+
+    annulerPrestationClick():void {
+        this.cacherPrestationEdit();
+    }
+}
+                        
+let vueInterventionEdit = new VueInterventionEdit;
+export { vueInterventionEdit }

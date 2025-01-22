@@ -1,0 +1,1 @@
+{"version":3,"file":"inventaire.js","sourceRoot":"","sources":["../src/controleur/inventaire.ts"],"names":[],"mappings":";AAAA,MAAM,aAAa;IACf,IAAI;QACJ,QAAQ,CAAC,IAAI,GAAG,oBAAoB,CAAC;IACrC,CAAC;CACA;AACD,IAAI,aAAa,GAAG,IAAI,aAAa,CAAC;AACtC,aAAa,CAAC,IAAI,EAAE,CAAC"}

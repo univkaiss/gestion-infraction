@@ -1,0 +1,30 @@
+"use strict";
+// import { vueFactureListe } from "../controleur/class_facture_edit.js";
+// vueFactureListe.init({
+//     divDetail: document.querySelector('[id=div_facture_detail]')
+//     , edtNum: document.querySelector('[id=edt_facture_num]')
+//     , divTitre: document.querySelector('[id=div_facture_titre]')
+//     , edtLib: document.querySelector('[id=edt_facture_lib]')
+//     , edtEtage: document.querySelector('[id=edt_facture_etage]')
+//     , edtCodeDept: document.querySelector('[id=edt_facture_codedept]')
+//     , btnRetour: document.querySelector('[id=btn_facture_retour]')
+//     , btnValider: document.querySelector('[id=btn_facture_valider]')
+//     , btnAnnuler: document.querySelector('[id=btn_facture_annuler]')
+//     , lblDetailDept: document.querySelector('[id=lbl_facture_detail_dept]')
+//     , lblNumErreur: document.querySelector('[id=lbl_erreur_num]')
+//     , lblEtageErreur: document.querySelector('[id=lbl_erreur_etage]')
+//     , lblDeptErreur: document.querySelector('[id=lbl_erreur_dept]')
+//     , lblEquiptErreur: document.querySelector('[id=lbl_erreur_equipt]')
+//     , divFactureEquipt: document.querySelector('[id=div_facture_equipement]')
+//     , divFactureEquiptEdit: document.querySelector('[id=div_facture_equipement_edit]')
+//     , btnAjouterEquipt: document.querySelector('[id=btn_equipement_ajouter]')
+//     , lblTotal: document.querySelector('[id=lbl_equipement_total]')
+//     , tableEquipement: document.querySelector('[id=table_equipement]')
+//     , listeEquipt: document.querySelector('[id=select_equipement]')
+//     , edtQte: document.querySelector('[id=edt_equipement_qte]')
+//     , btnValiderEquipt: document.querySelector('[id=btn_equipement_valider]')
+//     , btnAnnulerEquipt: document.querySelector('[id=btn_equipement_annuler]')
+//     , lblSelectEquiptErreur: document.querySelector('[id=lbl_erreur_select_equipement]')
+//     , lblQteErreur: document.querySelector('[id=lbl_erreur_qte]')
+// });
+//# sourceMappingURL=salle_edit.js.map
